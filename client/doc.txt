@@ -1,0 +1,10 @@
+A Grocery Delivery application - Instacart
+
+find, search and order and get the desired product at your door step 
+with in minutes  
+
+Leaflet.js is a popular, lightweight, and open-source JavaScript library used to build mobile-friendly interactive maps for the web.
+
+leaflet - helps us to implement map in react app with leaflet, react-leaflet and -D@types/leaflet package
+
+
