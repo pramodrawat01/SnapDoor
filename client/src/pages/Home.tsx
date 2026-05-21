@@ -1,6 +1,8 @@
+import AppPromoBanner from "../components/home/AppPromoBanner"
 import Features from "../components/home/Features"
 import Hero from "../components/home/Hero"
 import HomeCategories from "../components/home/HomeCategories"
+import NewsLetter from "../components/home/NewsLetter"
 import PopularProducts from "../components/home/PopularProducts"
 
 const Home = () => {
@@ -10,6 +12,8 @@ const Home = () => {
       <Features/>
       <HomeCategories/>
       <PopularProducts/>
+      <AppPromoBanner/>
+      <NewsLetter/>
     </div>
   )
 }

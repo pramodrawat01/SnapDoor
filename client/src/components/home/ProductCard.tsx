@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import type { Product } from "../../types"
 import {  Plus, Star } from "lucide-react"
+import { useCart } from "../../context/CartContext"
 
 interface Props {
     product : Product
@@ -8,15 +9,13 @@ interface Props {
 
 const ProductCard = ({product} : Props  ) => {
     const currency = import.meta.env.VITE_CURRENCY_SYMBOL || '$'
-    const {addToCart} = {
-        addToCart : (_data : any) => {}
-    }
+    const {addToCart} = useCart()
 
     const navigae = useNavigate()
   return (
     <div
     className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-md transition-all duration-300 group animate-fade-in cursor-pointer"
-    onClick={() => navigae(`products/${product?._id}`)} >
+    onClick={() => navigae(`/products/${product?._id}`)} >
         {/*** image */}
         <div className="relative aspect-square overflow-hidden">
             <img src={product.image} alt={product?.name}  
