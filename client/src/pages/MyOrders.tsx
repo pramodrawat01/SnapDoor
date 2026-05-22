@@ -14,7 +14,7 @@ const MyOrders = () => {
   const [activeTab, setActiveTab] = useState("all")
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const tabs = ["all", "placed", "out for delivery", "delivered" ]
+  const tabs = ["all", "Placed", "Out for Delivery", "Delivered" ]
 
   const {clearCart} = useCart()
 
