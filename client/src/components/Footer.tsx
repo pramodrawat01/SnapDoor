@@ -35,7 +35,7 @@ const Footer = () => {
                 <ul>
                   {
                     section.links.map((link, i) => (
-                      <li>
+                      <li key={i}>
                         {link.to ? (
                           <Link to={link.to} className="text-sm text-white/70 hover:text-white">
                           {link.label}
