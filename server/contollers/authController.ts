@@ -93,7 +93,36 @@ export const login = async (req : Request, res : Response) => {
         }
 
         // the validation is required here for req.body data - zod library (typescript first validation library) / custom validation functions
-        
+        const user = await prisma.user.findUnique(
+            {where : {email : email.toLowerCase()}, inlcude : {addresses : true}}
+        )
+
+        if(!user){
+            return  res.status(401).json({
+                message : "Invalid credentials !"
+            })
+        }
+
+        const isMatched = await bcrypt.compare(password , user.password)
+        if(!isMatched) {
+            return  res.status(401).json({
+                message : "Invalid credentials !"
+            })
+        }
+
+        // all credentials are correct -
+        const token = generateToken(user.id)
+
+        // here we can also create a safe user instead of userData
+        const userData : any  = {...user}
+        delete userData.password;
+        userData.isAdmin = getAdminStatus(userData.email)
+
+        // send responst to client
+        res.status(200).json({
+            user : userData, token
+        })
+
 
     } catch (error) {
         
