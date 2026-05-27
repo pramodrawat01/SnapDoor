@@ -4,6 +4,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 
+
+// crate orders
 export const createOrder = async(req : Request, res : Response) => {
     const {items, shippingAddress, paymentMathod} = req.body
 
@@ -225,10 +227,17 @@ export const updateorderStatus = async(req : Request , res : Response) => {
 
 
 // get all orders for admin
-// GET /api/order/all
+// GET /api/orders/all
+{/** 
+    first - find the order from order table 
+            which order amount is paid and not via card 
+    second - from those order brind user nd deliverypartner's info
+    third - and order them in decending order
+    fourth - return them(all orders)  in response 
+    */}
 
 export const getAllOrders = async(req : Request , res : Response) => {
-    const orders = await prisma.orde.findMany({
+    const orders = await prisma.order.findMany({
         where : {
            NOT : [{ paymentMetohd : "card" , isPaid : false }] 
         },
@@ -259,9 +268,15 @@ export const getAllOrders = async(req : Request , res : Response) => {
 
 
 
-
 // get order location with the help of lat and lng
 // GET /api/orders/:id/location
+{/*** 
+    FIRST - finding the order from order table where id and userId matches with given data
+    second - then selecting the livelocation and status from that order
+    third - if we can't find the order then return 404 (not found status) in response
+    fourth - return the live location in response once find it 
+    
+    */}
 
 export const getOrderLoaction = async(req : Request , res : Response) => {
     const order = await prisma.order.findFirst({
