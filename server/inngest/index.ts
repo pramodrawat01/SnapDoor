@@ -9,38 +9,42 @@ export const inngest = new Inngest({ id: "snapdoor" });
 
 // low stock alert to admin email function
 const checkLowStock = inngest.createFunction(
-    {
-        id : "check-low-stock",
-        name : "Low Stock Alert",
-        triggers : [
-            { event : "inverntry/stock.updated" }
-        ]
-    },
-    async ({event, step}) => {
-        const {productId} = event.data;
-        const product = await step.run('fetch-product', 
-            async () => {
-                return await prisma.product.findUnique({
-                    where : { id : productId}
-                })
-            }
-        )
+  {
+    id: "check-low-stock",
+    name: "Low Stock Alert",
+    triggers: [{ event: "inverntry/stock.updated" }],
+  },
+  async ({ event, step }) => {
+    // we have send productId inside data while trigring this event ....
+    const { productId } = event.data;
+    const product = await step.run("fetch-product", async () => {
+      return await prisma.product.findUnique({
+        where: { id: productId },
+      });
+    });
 
-        if(!product || product.stock === null || product.stock >= LOW_STOCK_THRESHOLD){
-            return { skipped : true, stock : product?.stock}
-        }
+    if (
+      !product ||
+      product.stock === null ||
+      product.stock >= LOW_STOCK_THRESHOLD
+    ) {
+      return { skipped: true, stock: product?.stock };
+    }
+   
+    await step.run("send-low-stock-email", async () => {
+      const adminEmails = process.env.ADMIN_EMAILS
+        ? process.env.ADMIN_EMAILS.split(",").map((e) => e.trim())
+        : [];
 
-        await step.run("send-low-stock-email", async () => {
-            const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(",").map((e) => e.trim()) : []
-            
-            // if there is no admin email found
-            if(adminEmails.length === 0) return {skipped : true, reason : "no admin emails"}
+      // if there is no admin email found
+      if (adminEmails.length === 0)
+        return { skipped: true, reason: "no admin emails" };
 
-            // if admin email found then send email
-            await sendEmail({
-                to : adminEmails.join(","),
-                subject : `lLow stock alert ${product.name}`,
-                body : `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden;">
+      // if admin email found then send email
+      await sendEmail({
+        to: adminEmails.join(","),
+        subject: `lLow stock alert ${product.name}`,
+        body: `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden;">
                         <div style="background: linear-gradient(135deg, #dc2626, #ef4444); padding: 24px 28px;">
                             <h2 style="color: #fff; margin: 0; font-size: 20px;">Low Stock Alert</h2>
                         </div>
@@ -59,18 +63,206 @@ const checkLowStock = inngest.createFunction(
                             </div>
                             <p style="margin: 20px 0 0; font-size: 13px; color: #9ca3af; text-align: center;">Please restock this item as soon as possible.</p>
                         </div>
-                    </div>`
-            })
+                    </div>`,
+      });
+    });
 
-        })
+    return { alerted: true, product: product.name, stock: product.stock };
+  },
+);
 
-        return { alerted : true, product : product.name, stock : product.stock}
+// second inntest function - monthly offers email (1st of every month )
+const sendMonthlyOffers = inngest.createFunction(
+  {
+    id: "send-monthly-offers",
+    name: "Monthly Payday Offers",
+    //  triggers: [cron("0 10 1 * *")],  // replacing this line with bellow / gpt suggestion 
+    triggers : [{cron : "0 10 1 * *"}]
+  },
+  async ({ step }) => {
+    const { deals, users } = await step.run (
+      "fetch-deals-and-users",
+      async ()
+      // here we have defined return types withpromise - ref - chatgpt
+       : Promise<{
+          deals : any[],
+          users : {name : string | null , email : string}[];         // or -  users : any[]   
+        }> => {
+        // get top discounted products as featured deals
+        const products = await prisma.product.findMany({
+          where: { stock: { gt: 0 } },
+          orderBy: { originalPrice: "desc" },
+          take: 6,
+        });
+
+        const allUsers = await prisma.user.findMany({
+          select: { name: true, email: true },
+        });
+        return { deals: products, users: allUsers };
+      },
+    );
+
+    if (users.length === 0 || deals.length === 0) {
+      return { skipped: true, reason: "No users or deals" };
     }
-)
+
+    let sendCount = 0;
+    // sending emails in batches of 10 to avoid overlimiting / overwhelming mail server
+    const batchSize = 10;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+
+      await step.run(`send-offers-batch-${i}`, async () => {
+        for (const u of batch) {
+          await sendEmail({
+            to: u.email,
+            subject: `Fresh picks just for you!`,
+            body: `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden;">
+                
+                <div style="background: linear-gradient(135deg, #f97316, #fb923c); padding: 24px 28px;">
+                    <h2 style="color: #fff; margin: 0; font-size: 20px;">Fresh Picks Just For You!</h2>
+                    <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 13px;">
+                        Exclusive offers to kick off your month right
+                    </p>
+                </div>
+
+                <div style="padding: 28px;">
+                    <p style="margin: 0 0 20px; font-size: 15px; color: #374151;">
+                        Hi <strong>${u.name}</strong>, check out this month's top picks!
+                    </p>
+
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        ${deals
+                          .reduce((rows: any, _, i: number) => {
+                            if (i % 3 === 0) {
+                              rows.push(deals.slice(i, i + 3));
+                            }
+                            return rows;
+                          }, [])
+                          .map(
+                            (row: any) => `
+                                <tr>
+                                    ${row
+                                      .map(
+                                        (p: any) => `
+                                            <td style="width: 33%; padding: 8px; vertical-align: top;">
+                                                <div style="border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; text-align: center;">
+                                                    ${p.image ? `<img src="${p.image}" alt="${p.name}" style="width: 100%; height: 100px; object-fit: cover;" />` : ""}
+                                                    <div style="padding: 10px;">
+                                                        <p style="margin: 0; font-size: 13px; font-weight: 600; color: #111827;">
+                                                            ${p.name}
+                                                        </p>
+                                                        <p style="margin: 4px 0 0; font-size: 15px; font-weight: 700; color: #16a34a;">
+                                                            $${p.price.toFixed(2)}
+                                                            ${p.originalPrice > p.price ? `<span style="font-size: 11px; color: #9ca3af; text-decoration: line-through; margin-left: 4px;">$${p.originalPrice.toFixed(2)}</span>` : ""}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>`,
+                                      )
+                                      .join("")}
+                                </tr>`,
+                          )
+                          .join("")}
+                    </table>
+
+                    <div style="text-align: center; margin-top: 24px;">
+                        <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/products"
+                           style="display: inline-block; background: #16a34a; color: #fff; padding: 12px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                           Shop All Deals →
+                        </a>
+                    </div>
+                </div>
+            </div>`,
+          });
+        }
+      });
+
+      sendCount += batch.length;
+    }
+    return {sent : sendCount}
+  },
+);
 
 
-// second inntest function - monthly offers emil (1st of every month )
+// auto assign rider after 5 minutes of order placed
+const autoAssignRider = inngest.createFunction({
+  id : 'auto-assign-rider',
+  name : "Auto Asign Delivery Rider",
+  triggers : [
+    {event : "order/placed"}
+  ]
+}, async ({event , step}) => {
+  const {orderId} = event.data
 
+  // wait for 5 minutes before assigning the rider 
+  await step.sleep('wait-5-min', "5m")
+
+  const result = await step.run("assign-rider", async()=> {
+    const order = await prisma.order.findUnique({
+      where : {id : orderId}
+    })
+
+    // skip if order doesn't exist or already assigned or cancelled
+    if(!order) return {skipped : true, reason : "Order not found"};
+    if(order.deliveryPartnerId) return {skipped : true, reason : "Delivery partner already assigned"}
+    if(["Cancelled", "Delivered"].includes(order.status as string )) return {skipped : true, reason : `order is ${order.status}`}
+
+    // now order exist and waiting for delivery partner 
+    // find active delivery partner who are not delivering currently 
+
+    /// here we should directly  find the riders who are not delivering by checking their delivery status - is delivering or not : true or false
+    /// type saftey offerd by chatgpt here also 
+    const busyOrders : { deliveryPartnerId : string | null}[] = await prisma.order.findMany({
+      where : { status : {in : ["Assigned", "Packed", "Out for Delivery"]}},
+      select : {deliveryPartnerId : true}
+    })
+
+    const busyRiderIds = busyOrders.map( ( o )  => o.deliveryPartnerId)
+
+    // here we are checking for those riders who are active status but not exist in this
+    // busyRiderIds, from those riders the first one will return 
+    const availableRider = await prisma.deliveryPartner.findFirst({
+      where : {
+        isActive : true,
+        id : {notIn : busyRiderIds as string[]}
+      }
+    })
+
+    if(!availableRider) return {skipped : true , reason : "Oops!, No delivery partner is available right now, we will notifiy you once the rider will available "}
+
+    // if rider is available then generate 6 digit otp 
+    // we can also create  constant here for otp generation or can use any external servie as well
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+
+    const history = (Array.isArray(order.statusHistory) ? order.statusHistory : []) as any[]
+    history.push({status : "Assigned", note : `Auto Assigned to ${availableRider.name}`, timeStamp : new Date()})
+    
+    await prisma.order.update({
+      where : {id : orderId},
+      data : {
+        deliveryPartnerId : availableRider.id,
+        deliveryOtp : otp,
+        status : "Assigned",
+        statusHistory : history
+      }
+    })
+
+
+    return {
+      assigned : true,
+      riderId : availableRider.id,
+      riderName : availableRider.name,
+      orderId : orderId
+    }
+  
+  })
+
+  return result
+
+})
 
 // Create an empty array where we'll export future Inngest functions
-export const functions = [checkLowStock];
+export const functions = [checkLowStock, sendMonthlyOffers, autoAssignRider];
+
+

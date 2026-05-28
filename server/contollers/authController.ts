@@ -94,7 +94,10 @@ export const login = async (req : Request, res : Response) => {
 
         // the validation is required here for req.body data - zod library (typescript first validation library) / custom validation functions
         const user = await prisma.user.findUnique(
-            {where : {email : email.toLowerCase()}, inlcude : {addresses : true}}
+            {
+                where : {email : email.toLowerCase()}, 
+                include : {addresses : true}
+            }
         )
 
         if(!user){

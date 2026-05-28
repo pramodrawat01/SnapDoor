@@ -40,7 +40,7 @@ export const getProducts = async (req : Request, res : Response) => {
     else if(sort === "price-high") orderBy.price = 'desc'
     else orderBy.createdAt = 'desc'
 
-    const products = await prisma.product.findmany({where, orderBy})
+    const products = await prisma.product.findMany({where, orderBy})
 
     const productsWithDiscount = products.map((p:any) => {
         const discount = p.originalPrice && p.price ? Math.round( ((p.originalPrice - p.price)/p.originalPrice)*100) : 0

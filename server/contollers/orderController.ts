@@ -3,9 +3,10 @@
 
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { inngest } from "../inngest/index.js";
 
 
-// crate orders
+// create orders
 export const createOrder = async(req : Request, res : Response) => {
     const {items, shippingAddress, paymentMathod} = req.body
 
@@ -100,6 +101,15 @@ export const createOrder = async(req : Request, res : Response) => {
             }
         })
     }
+
+
+    // send stock update event for each product in the order table by trigring inngest function
+    for(const item of orderItems){
+        await inngest.send({name : "inverntry/stock.updated",  data : {productId : item.product}})
+    }
+
+    // trigger second event - assign rider after 5 min
+    await inngest.send({name : "order/placed", data : {orderId : order.id}})
 
 }
 
@@ -295,7 +305,7 @@ export const getOrderLoaction = async(req : Request , res : Response) => {
     })
 
     res.status(200).json({
-        liveLocation : order.liveLocatioin,
+        liveLocation : order.liveLocation,
         status : order.status
     })
 }   
