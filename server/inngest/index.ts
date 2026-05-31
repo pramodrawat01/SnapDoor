@@ -266,3 +266,60 @@ const autoAssignRider = inngest.createFunction({
 export const functions = [checkLowStock, sendMonthlyOffers, autoAssignRider];
 
 
+
+
+
+// second inntest function - monthly offers email (1st of every month )
+const sendMonthlyOffer = inngest.createFunction(
+  {
+    id: "send-monthly-offers",
+    name: "Monthly Payday Offers",
+    triggers : [{cron : "0 10 1 * *"}]
+  },
+  async ({ step }) => {
+    const { deals, users } = await step.run (
+      "fetch-deals-and-users",
+      async ()
+       : Promise<{
+          deals : any[],
+          users : {name : string | null , email : string}[];         // or -  users : any[]   
+        }> => {
+        // get top discounted products as featured deals
+        const products = await prisma.product.findMany({
+          where: { stock: { gt: 0 } },
+          orderBy: { originalPrice: "desc" },
+          take: 6,
+        });
+        // 
+        const allUsers = await prisma.user.findMany({
+          select: { name: true, email: true },
+        });
+        return { deals: products, users: allUsers };
+      },
+    );
+    if (users.length === 0 || deals.length === 0) {
+      return { skipped: true, reason: "No users or deals" };
+    }
+    let sendCount = 0;
+    // sending emails in batches of 10 to avoid overlimiting / overwhelming mail server
+    const batchSize = 10;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+
+      await step.run(`send-offers-batch-${i}`, async () => {
+        for (const u of batch) {
+          await sendEmail({
+            to: u.email,
+            subject: `Fresh picks just for you!`,
+            body: `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden;">
+                
+            </div>`,
+          });
+        }
+      });
+
+      sendCount += batch.length;
+    }
+    return {sent : sendCount}
+  },
+);
