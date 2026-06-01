@@ -1,26 +1,28 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../context/CartContext";
-import { dummyAddressData } from "../assets/assets";
 import type { Address } from "../types";
 import { ArrowLeft, CheckIcon, ChevronRightIcon, CreditCardIcon, MapPinIcon } from "lucide-react";
 import CheckoutAddress from "../components/Checkout/CheckoutAddress";
 import CheckoutPayment from "../components/Checkout/CheckoutPayment";
 import CheckoutReview from "../components/Checkout/CheckoutReview";
+import api from "../config/api";
+import toast from "react-hot-toast";
+import { useAuth } from "../context/authContext";
 
 const Checkout = () => {
 
   const navigate = useNavigate()
   const currency = import.meta.env.VITE_CURRENCY_SYMBOL || "$";
 
-  const {items, cartTotal} = useCart()
-  const {user} = {user : {addresses : dummyAddressData}}
+  const {items, cartTotal, clearCart} = useCart()
+  const {user} = useAuth()
 
-  const [step, setStep] = useState("")
+  const [step, setStep] = useState("address")
   const [loading, setLoading] = useState(false)
 
   const [address, setAddress] = useState<Address>({
-    _id : "",
+    id : "",
     label : "Home",
     address : "",
     city : "",
@@ -55,8 +57,34 @@ const Checkout = () => {
   ]
 
   const handlePlaceOrder = async () => {
+    console.log("payment meothd", paymentMethod)
     setLoading(true)
-    navigate("/orders")
+    try {
+      const orderData = {
+        items : items.map((item) => ({
+          product : item.product.id,
+          quantity : item.quantity
+        })),
+        shippingAddress : address,
+        paymentMethod
+      }
+
+      const { data } = await api.post(`/orders`, orderData)
+      console.log(data)
+      if(data.url){
+        window.location.href = data.url;
+        return;
+      }
+      clearCart()
+      toast.success("Order Placed Successfully!")
+      navigate(`/orders/${data.order.id}`)
+    } catch (error : any) {
+      toast.error(error.response?.data?.message || error.message)
+    }
+    finally{
+      setLoading(false)
+      scrollTo(0,0)
+    }
   }
 
   // populate address from user's default address
@@ -67,7 +95,7 @@ const Checkout = () => {
     if(user?.addresses?.length){
       const defaultAddr = user.addresses.find((a) => a.isDefault) || user.addresses[0]
       setAddress({
-        _id : defaultAddr._id,
+        id : defaultAddr.id,
         label : defaultAddr.label,
         address : defaultAddr.address,
         city : defaultAddr.city,

@@ -6,6 +6,8 @@ import bcrypt from 'bcrypt'
 
 
 // get admin dashboard data
+
+// GET /api/admin/stats
 export const getAdminStats = async(req : Request, res : Response) => {
     const [totalOrders, totalUsers, totalProducts, outOfStock, totalPartners, recentOrders] = await Promise.all([
         // getting the total count of orders which are completed (exclude card payment method and also exclude non paid orders yet)

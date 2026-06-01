@@ -57,6 +57,7 @@ export const getProducts = async (req : Request, res : Response) => {
 // GET /api/products/:id
 
 export const getProduct = async(req: Request, res : Response) => {
+    
     const product = await prisma.product.findUnique({
         where : {id : req.params.id as string}
     })
@@ -106,12 +107,17 @@ export const updateProduct = async(req:Request, res : Response) => {
 }
 
 // POST /api/products/:id
-export const deleteProduct = async(req:Request, res : Response) => {
-    const product = await prisma.product.delete({
-        where : { id : req.params.id as string }
+// updating the stock of any product 
+
+// one thing we have to check - before updting the stock to 0 is the product is already in any order or not / 
+/// or if this business logic is correct or not ?? look for how actual quick commerece works
+export const updateProductStock = async(req:Request, res : Response) => {
+    const product = await prisma.product.update({
+        where : { id : req.params.id as string },
+        data : {stock : Number(0)}
     })
 
     res.status(201).json({
-        message : "product deleted successfully"
+        message : "product (stock) updated successfully"
     })
 }

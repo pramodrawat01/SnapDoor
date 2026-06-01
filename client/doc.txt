@@ -1,4 +1,4 @@
-A Grocery Delivery application - Instacart
+A Grocery Delivery application - SnapDoor
 
 find, search and order and get the desired product at your door step 
 with in minutes  

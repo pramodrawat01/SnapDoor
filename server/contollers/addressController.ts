@@ -23,7 +23,7 @@ export const getAddresses = async (req : Request, res : Response) => {
 }
 
 
-// add address
+// add/create address
 // POST /api/addresses
 export const addAddress = async (req : Request, res : Response) => {
     const {label, address, city, state,  zip, isDefault, lat, lng} = req.body
@@ -63,7 +63,7 @@ export const addAddress = async (req : Request, res : Response) => {
             city : city,
             state : state,
             zip : zip,
-            isDefault : isDefault,
+            isDefault : makeDefault,
             lat : Number(lat),
             lng : Number(lng)
         }

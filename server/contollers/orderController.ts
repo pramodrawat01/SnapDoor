@@ -8,8 +8,9 @@ import { inngest } from "../inngest/index.js";
 
 // create orders
 export const createOrder = async(req : Request, res : Response) => {
-    const {items, shippingAddress, paymentMathod} = req.body
+    const {items, shippingAddress, paymentMethod} = req.body
 
+console.log("payment method", paymentMethod)
     // check if order items are empty ?
     if(!items || items.length === 0){
         return  res.status(400).json({
@@ -67,7 +68,7 @@ export const createOrder = async(req : Request, res : Response) => {
             userId : req.user!.id,
             items : orderItems,
             shippingAddress, 
-            paymentMathod, 
+            paymentMethod, 
             subtotal,
             deliveryFee,
             tax,
@@ -78,7 +79,7 @@ export const createOrder = async(req : Request, res : Response) => {
     })
 
 
-    if(paymentMathod === 'card'){
+    if(paymentMethod === 'card'){
         // strip payment link
 
     }
@@ -164,7 +165,7 @@ export const getOrder = async(req : Request , res : Response) => {
                     name : true,
                     phone : true,
                     avatar : true,
-                    vehicalType : true
+                    vehicleType : true
                 }
             }
         }
@@ -248,8 +249,9 @@ export const updateorderStatus = async(req : Request , res : Response) => {
 
 export const getAllOrders = async(req : Request , res : Response) => {
     const orders = await prisma.order.findMany({
+
         where : {
-           NOT : [{ paymentMetohd : "card" , isPaid : false }] 
+           NOT : [{ paymentMethod : "card" , isPaid : false }] 
         },
         include : {
             user : {

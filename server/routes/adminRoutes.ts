@@ -5,7 +5,7 @@ import { assignDeliverPartner, createDeliveryPartner, getAdminStats, getDelivery
 
 const adminRouter = express.Router()
 
-adminRouter.get('/', auth, admin, getAdminStats)
+adminRouter.get('/stats', auth, admin, getAdminStats)
 adminRouter.get('/delivery-partners', auth, admin, getDeliveryPartners)
 adminRouter.post('/delivery-partners', auth, admin, createDeliveryPartner)
 

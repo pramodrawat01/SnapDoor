@@ -2,10 +2,11 @@ import { ArrowUpRightIcon, BikeIcon, ChevronDownIcon, LogOutIcon, MapIcon, MenuI
 import React, { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useCart } from "../context/CartContext"
+import { useAuth } from "../context/authContext"
 
  
 const Navbar = () => {
-    const user : any = { name : "John", email : "john@gmail.com", isAdmin : true}
+    const {user, logout} = useAuth()
     
     const {cartCount, setIsCartOpen} = useCart()
 
@@ -22,8 +23,9 @@ const Navbar = () => {
     }
 
     const handleLogout = () => {
+        logout()
         setUserMenuOpen(false)
-        navigate("/");
+        navigate("/login");
     }
 
 
@@ -33,7 +35,7 @@ const Navbar = () => {
 
             {/*** logo */}
             <Link to='/' className="flex items-center gap-2 text-[22px] font-medium shrink-0">
-                <BikeIcon size={24}/> Instacart
+                <BikeIcon size={24}/> SnapDoor
             </Link>
 
             <div className="w-full flex items-center justify-end gap-4 lg:gap-10">
