@@ -9,6 +9,7 @@ const upload = multer({ storage })
 
 uploadRouter.post('/', auth, upload.single('image'), async(req : Request, res : Response)=> {
     try {
+        
         if(!req.file){
             return res.status(400).json({
                 message : "No image file provided"
@@ -16,7 +17,7 @@ uploadRouter.post('/', auth, upload.single('image'), async(req : Request, res : 
         }
 
         const b64 = Buffer.from(req.file.buffer).toString("base64")
-        const dataURI = "data:" + req.file.mimetype + ":BASE64" + b64;
+        const dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
         const result = await cloudinary.uploader.upload(dataURI, {
             folder : "grocery-del",
@@ -28,8 +29,10 @@ uploadRouter.post('/', auth, upload.single('image'), async(req : Request, res : 
         })
 
     } catch (error : any) {
+        console.log(error , 'upload error')
         res.status(500).json({
-            message : error.message
+            success : false,
+            message : error?.message || "upload failed"
         })
     }
 })
