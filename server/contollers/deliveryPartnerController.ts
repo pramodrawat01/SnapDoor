@@ -5,13 +5,14 @@ import jwt from 'jsonwebtoken'
 
 
 const generateToken = (id : string) => {
-    return jwt.sign({ id, role : "delivyer"}, process.env.JWT_SECRET as string, { expiresIn : "7d"})
+    return jwt.sign({ id, role : "delivery"}, process.env.JWT_SECRET as string, { expiresIn : "7d"})
 }
 
 // login delivery partner
 // POST /api/delivery/login
 export const loginPartner = async(req : Request, res : Response) => {
     const {email, password} = req.body
+    
 
     if(!email || !password) {
         return res.status(400).json({
@@ -21,6 +22,7 @@ export const loginPartner = async(req : Request, res : Response) => {
     const partner = await prisma.deliveryPartner.findUnique({
         where : { email : email.toLowerCase()}
     })
+
 
     if(!partner) {
         return res.status(404).json({
