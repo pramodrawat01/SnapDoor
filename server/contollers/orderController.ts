@@ -80,36 +80,36 @@ console.log("payment method", paymentMethod)
     })
 
 
-    if(paymentMethod === 'card'){
-        // stripe payment link
+    // if(paymentMethod === 'card'){
+    //     // stripe payment link
         
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
+    //     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
         
-        const session = await stripe.checkout.sessions.create({
-        success_url: `${req.headers.origin}/orders?clearCart=true`,
-        cancel_url : `${req.headers.origin}/checkout`,
-        line_items: [
-            {
-            price_data: {
-                currency : "usd",
-                product_data : {
-                    name : "Payment Groceries",
-                },
-                unit_amount : Math.round(total * 100)
-            },
-            quantity: 2,
-            },
-        ],
-        mode: 'payment',
-        metadata : {
-            orderId : order.id 
-        }
-        });
-        return res.json({
-            // return the session url
-            url : session.url
-        })
-    }
+    //     const session = await stripe.checkout.sessions.create({
+    //     success_url: `${req.headers.origin}/orders?clearCart=true`,
+    //     cancel_url : `${req.headers.origin}/checkout`,
+    //     line_items: [
+    //         {
+    //         price_data: {
+    //             currency : "usd",
+    //             product_data : {
+    //                 name : "Payment Groceries",
+    //             },
+    //             unit_amount : Math.round(total * 100)
+    //         },
+    //         quantity: 2,
+    //         },
+    //     ],
+    //     mode: 'payment',
+    //     metadata : {
+    //         orderId : order.id 
+    //     }
+    //     });
+    //     return res.json({
+    //         // return the session url
+    //         url : session.url
+    //     })
+    // }
 
 
     res.status(200).json({

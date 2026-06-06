@@ -15,7 +15,7 @@ import { stripeWebhook } from "./contollers/webhook.js"
 
 const app = express()
 // stripe endpoint
-app.post("/api/stripe", express.raw({type : 'application/json'}), stripeWebhook)
+// app.post("/api/stripe", express.raw({type : 'application/json'}), stripeWebhook)
 
 
 // middleware
