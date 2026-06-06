@@ -11,6 +11,6 @@ deliveryPartnerRouter.put('/my-deliveries/:id/complete', deliveryAuth, completeD
 deliveryPartnerRouter.put('/my-deliveries/:id/cancel', deliveryAuth, cancelDelivery)
 deliveryPartnerRouter.put('/my-deliveries/:id/status', deliveryAuth, updateDeliveryStatus)
 
-deliveryPartnerRouter.put('/my-deliveries/:id/location', deliveryAuth, updateLocation)
+deliveryPartnerRouter.put('/m y-deliveries/:id/location', deliveryAuth, updateLocation)
 
 export default deliveryPartnerRouter
